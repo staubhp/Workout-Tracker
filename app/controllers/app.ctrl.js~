@@ -1,5 +1,5 @@
-angular.module('App').controller('AppController',
-		['$scope', '$rootScope', '$state',
-		function appController($scope, $rootScope, $state) {
+angular.module('app').controller('AppController',
+		['$scope', '$rootScope', '$state', 
+		function appController($scope, $rootScope, $state ) {
 
 		}]);

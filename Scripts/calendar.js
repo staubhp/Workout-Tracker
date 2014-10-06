@@ -10,7 +10,7 @@
 
 angular.module('ui.calendar', [])
   .constant('uiCalendarConfig', {})
-  .controller('uiCalendarCtrl', ['$scope', '$timeout', '$locale', function($scope, $timeout, $locale){
+  .controller('uiCalendarCtrl', ['$scope', '$timeout', function($scope, $timeout){
 
       var sourceSerialId = 1,
           eventSerialId = 1,
@@ -26,9 +26,8 @@ angular.module('ui.calendar', [])
                       // In this way the function will be safely executed on the next digest.
 
                       var args = arguments;
-                      var _this = this;
                       $timeout(function(){
-                        functionToWrap.apply(_this, args);
+                          functionToWrap.apply(this, args);
                       });
                   };
               }
@@ -37,11 +36,11 @@ angular.module('ui.calendar', [])
           };
 
       this.eventsFingerprint = function(e) {
-        if (!e._id) {
-          e._id = eventSerialId++;
+        if (!e.__uiCalId) {
+          e.__uiCalId = eventSerialId++;
         }
         // This extracts all the information we need from the event. http://jsperf.com/angular-calendar-events-fingerprint/3
-        return "" + e._id + (e.id || '') + (e.title || '') + (e.url || '') + (+e.start || '') + (+e.end || '') +
+        return "" + e.__uiCalId + (e.id || '') + (e.title || '') + (e.url || '') + (+e.start || '') + (+e.end || '') +
           (e.allDay || '') + (e.className || '') + extraEventSignature(e) || '';
       };
 
@@ -165,31 +164,26 @@ angular.module('ui.calendar', [])
 
           return config;
       };
-
-    this.getLocaleConfig = function(fullCalendarConfig) {
-      if (!fullCalendarConfig.lang || fullCalendarConfig.useNgLocale) {
-        // Configure to use locale names by default
-        var tValues = function(data) {
-          // convert {0: "Jan", 1: "Feb", ...} to ["Jan", "Feb", ...]
-          var r, k;
-          r = [];
-          for (k in data) {
-            r[k] = data[k];
-          }
-          return r;
-        };
-        var dtf = $locale.DATETIME_FORMATS;
-        return {
-          monthNames: tValues(dtf.MONTH),
-          monthNamesShort: tValues(dtf.SHORTMONTH),
-          dayNames: tValues(dtf.DAY),
-          dayNamesShort: tValues(dtf.SHORTDAY)
-        };
-      }
-      return {};
-    };
   }])
-  .directive('uiCalendar', ['uiCalendarConfig', function(uiCalendarConfig) {
+  .directive('uiCalendar', ['uiCalendarConfig', '$locale', function(uiCalendarConfig, $locale) {
+    // Configure to use locale names by default
+    var tValues = function(data) {
+      // convert {0: "Jan", 1: "Feb", ...} to ["Jan", "Feb", ...]
+      var r, k;
+      r = [];
+      for (k in data) {
+        r[k] = data[k];
+      }
+      return r;
+    };
+    var dtf = $locale.DATETIME_FORMATS;
+    uiCalendarConfig = angular.extend({
+      monthNames: tValues(dtf.MONTH),
+      monthNamesShort: tValues(dtf.SHORTMONTH),
+      dayNames: tValues(dtf.DAY),
+      dayNamesShort: tValues(dtf.SHORTDAY)
+    }, uiCalendarConfig || {});
+
     return {
       restrict: 'A',
       scope: {eventSources:'=ngModel',calendarWatchEvent: '&'},
@@ -208,11 +202,8 @@ angular.module('ui.calendar', [])
 
           fullCalendarConfig = controller.getFullCalendarConfig(calendarSettings, uiCalendarConfig);
 
-          var localeFullCalendarConfig = controller.getLocaleConfig(fullCalendarConfig);
-          angular.extend(localeFullCalendarConfig, fullCalendarConfig);
-
           options = { eventSources: sources };
-          angular.extend(options, localeFullCalendarConfig);
+          angular.extend(options, fullCalendarConfig);
 
           var options2 = {};
           for(var o in options){
@@ -224,13 +215,10 @@ angular.module('ui.calendar', [])
         }
 
         scope.destroy = function(){
-          if(scope.calendar && scope.calendar.fullCalendar){
-            scope.calendar.fullCalendar('destroy');
-          }
           if(attrs.calendar) {
-            scope.calendar = scope.$parent[attrs.calendar] =  $(elm).html('');
+            scope.calendar = scope.$parent[attrs.calendar] =  elm.html('');
           } else {
-            scope.calendar = $(elm).html('');
+            scope.calendar = elm.html('');
           }
         };
 
@@ -239,8 +227,8 @@ angular.module('ui.calendar', [])
         };
 
         eventSourcesWatcher.onAdded = function(source) {
-            scope.calendar.fullCalendar('addEventSource', source);
-            sourcesChanged = true;
+          scope.calendar.fullCalendar('addEventSource', source);
+          sourcesChanged = true;
         };
 
         eventSourcesWatcher.onRemoved = function(source) {
@@ -253,14 +241,10 @@ angular.module('ui.calendar', [])
         };
 
         eventsWatcher.onRemoved = function(event) {
-          scope.calendar.fullCalendar('removeEvents', function(e) { 
-            return e._id === event._id;
-          });
+          scope.calendar.fullCalendar('removeEvents', function(e) { return e === event; });
         };
 
         eventsWatcher.onChanged = function(event) {
-          event._start = $.fullCalendar.moment(event.start);
-          event._end = $.fullCalendar.moment(event.end);
           scope.calendar.fullCalendar('updateEvent', event);
         };
 
