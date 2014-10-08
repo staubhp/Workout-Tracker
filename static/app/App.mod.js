@@ -4,7 +4,7 @@ angular.module('app', ['ui.router', 'ui.calendar'])
 				$stateProvider
 					.state('/', {
 						url: "",
-						templateUrl: "app/partials/app.tpl.html",
+						templateUrl: "../static/app/partials/app.tpl.html",
 					controller: "AppController"
 						
 					})															
