@@ -1,6 +1,6 @@
 angular.module('app').controller('AppController',
-		['$scope', '$rootScope', '$state', 
-		function appController($scope, $rootScope, $state ) {
+		['$scope', '$rootScope', '$state', '$http', 
+		function appController($scope, $rootScope, $state, $http) {
 			$scope.events = [			
 			];
 
@@ -30,6 +30,7 @@ angular.module('app').controller('AppController',
 					$scope.events.push(myEvent);
 				}
 				getStats();
+				save();
 			}
 
 			$scope.uiConfig = {
@@ -46,6 +47,33 @@ angular.module('app').controller('AppController',
 				$scope.stats.currentStreak = streaks.currentStreak;
 			        $scope.stats.currentStreakDates = streaks.currentStreakDates;	
 
+			}
+
+			function save(){
+				var eventData =[];
+
+				_.each($scope.events, function(event){
+					eventData.push({
+						title: event.title,
+						start: event.start,
+						allDay: event.allDay,
+						time: event.time
+					});
+				});
+
+				$http({
+		                    method: "post",
+                		    url: "data",
+                		    data: eventData
+			             });
+			}
+
+			function load(){
+				$http.get('/data').success(function(data, status, headers, config){
+					debugger;
+					_.each(data, function(event){$scope.events.push(event);});
+					//getStats();
+				});
 			}
 
 			function getStreaks(){
@@ -95,8 +123,7 @@ angular.module('app').controller('AppController',
 			}
 
 			function init(){
-				getStats();
-
+				load();
 			}
 
 			init();
