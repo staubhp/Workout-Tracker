@@ -40,14 +40,7 @@ angular.module('app').controller('AppController',
 				}
 			};
 
-			function getStats(){
-				var streaks = getStreaks();
-				$scope.stats.longestStreak = streaks.longestStreak;
-				$scope.stats.longestStreakDates = streaks.longestStreakDates;
-				$scope.stats.currentStreak = streaks.currentStreak;
-			        $scope.stats.currentStreakDates = streaks.currentStreakDates;	
-
-			}
+		
 
 			function save(){
 				var eventData =[];
@@ -69,11 +62,18 @@ angular.module('app').controller('AppController',
 			}
 
 			function load(){
-				$http.get('/data').success(function(data, status, headers, config){
-					debugger;
+				$http.get('/data').success(function(data, status, headers, config){					
 					_.each(data, function(event){$scope.events.push(event);});
-					//getStats();
+					getStats();					
 				});
+			}
+			
+			function getStats(){						
+					var streaks = getStreaks();					
+					$scope.stats.currentStreak = streaks.currentStreak;
+					$scope.stats.currentStreakDates = streaks.currentStreakDates;					
+					$scope.stats.longestStreak = streaks.longestStreak;
+					$scope.stats.longestStreakDates = streaks.longestStreakDates;					
 			}
 
 			function getStreaks(){
@@ -85,8 +85,6 @@ angular.module('app').controller('AppController',
 				var currentStreakStart = new Date();
 				var currentStreakEnd = new Date();
 
-
-
 				for (i = 0; i < sortedEvents.length; i++){	
 					if (i == sortedEvents.length-1){break;}
 					
@@ -95,22 +93,25 @@ angular.module('app').controller('AppController',
 					
 					if (nextEvent.time == (thisEvent.time+ 86400000)){
 						currentStreak +=1;
-						if (i == 0){currentStreakStart = thisEvent.start; }
-						currentStreakEnd = nextEvent.start;
+						if (i == 0){currentStreakStart = new Date(thisEvent.start); }
+						currentStreakEnd = new Date(nextEvent.start);
 						if (currentStreak > longestStreak){
 							longestStreak = currentStreak;
-							longestStreakStart = currentStreakStart;
-							longestStreakEnd = currentStreakEnd;
+							debugger;
+							longestStreakStart = new Date(currentStreakStart);
+							longestStreakEnd = new Date(currentStreakEnd);
 						}
 					}
 					else{
 						currentStreak = 1;
-						currentStreakStart = nextEvent.start;
-						currentStreakEnd = nextEvent.start;
+						currentStreakStart = new Date(nextEvent.start);
+						currentStreakEnd = new Date(nextEvent.start);
 					}
 				}
-
-				return{
+					debugger;
+				
+				var ret =
+				{
 					longestStreak: longestStreak,
 					longestStreakDates: (longestStreakStart.getMonth() + 1) + "/" + longestStreakStart.getDate() 
 						+ "-" +  (longestStreakEnd.getMonth() + 1)+ "/" + longestStreakEnd.getDate(),
@@ -119,7 +120,8 @@ angular.module('app').controller('AppController',
 					       	+ "-" +  (currentStreakEnd.getMonth() + 1)+ "/" + currentStreakEnd.getDate()
 
 				}
-
+				console.log(ret);
+				return ret;
 			}
 
 			function init(){
